@@ -3,9 +3,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "../provider/mode-toggle";
+
+const navLinks = [
+  { label: "CourierX", href: "https://courierx.io" },
+  { label: "Binboi", href: "https://binboi.com" },
+  { label: "Miransas-Chess", href: "https://miransas.com/projects/miransas-chess" },
+];
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,9 +42,16 @@ export function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-          {["Features", "Pricing", "Docs", "Changelog"].map((item) => (
-            <Link key={item} href={`/${item.toLowerCase()}`} className="dark:text-zinc-400 text-black hover:text-brand-primary transition-colors duration-200">
-              {item}
+          {navLinks.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 dark:text-zinc-400 text-black hover:text-brand-primary transition-colors duration-200"
+            >
+              {item.label}
+              <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
             </Link>
           ))}
         </nav>
@@ -48,10 +61,13 @@ export function Header() {
           <ThemeToggle />
           <Link
             href="https://miransas.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Visit Miransas — see all our products"
             className="group relative inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold  text-white dark:text-zinc-950 transition-all hover:shadow-[0_0_20px_rgba(140,255,46,0.4)] active:scale-95"
           >
-            <span>Miransas started</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" strokeWidth={3} />
+            <span>Miransas</span>
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={3} />
           </Link>
         </div>
 
@@ -67,13 +83,21 @@ export function Header() {
       {/* Mobil Menü */}
       {isMobileMenuOpen && (
         <div className="absolute top-16 left-0 w-full bg-brand-bg/95 backdrop-blur-xl border-b border-white/10 px-6 py-8 flex flex-col gap-6 md:hidden animate-in slide-in-from-top-5">
-          {["Features", "Pricing", "Docs", "Changelog"].map((item) => (
-            <Link key={item} href={`/${item.toLowerCase()}`} onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium text-white hover:text-brand-primary">
-              {item}
+          {navLinks.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="inline-flex items-center gap-1 text-lg font-medium text-white hover:text-brand-primary"
+            >
+              {item.label}
+              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
             </Link>
           ))}
           <div className="border-t border-white/5 pt-6 flex flex-col gap-4">
-            
+
           </div>
         </div>
       )}

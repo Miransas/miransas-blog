@@ -101,16 +101,21 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-brand-bg text-foreground antialiased selection:bg-brand-primary selection:text-brand-bg;
-  }
   html {
     @apply font-sans;
+    background-color: var(--background);  /* ← yeni satır */
+  }
+  body {
+    @apply text-foreground antialiased selection:bg-brand-primary selection:text-brand-bg;
+    background-color: var(--background);  /* ← yeni: bg-brand-bg yerine */
+    min-height: 100dvh;                    /* ← yeni satır */
   }
 }
 
 html.lenis, html.lenis body {
   height: auto;
+  min-height: 100dvh;  /* ← ekle */
+  background-color: var(--background);  /* ← ekle */
 }
 
 .lenis.lenis-smooth {

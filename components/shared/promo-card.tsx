@@ -6,21 +6,26 @@ export function PromoCard() {
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="mb-4 overflow-hidden rounded-lg border border-border bg-secondary p-5">
         <p className="text-[10px] font-medium text-muted-foreground">
-          Introducing Miransas
+          INTRODUCING MIRANSAS
         </p>
 
         <p className="mt-3 text-lg font-bold leading-tight text-foreground text-balance">
-          Engineering the next generation of digital products.
+          Infrastructure tools for builders.
         </p>
 
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          A modern technology platform focused on performance, scalability,
-          and developer experience. Build faster and grow with confidence.
+          We build self-hosted, open-source developer tools — email APIs,
+          tunneling, chess engines, and more. One brand, many products.
         </p>
 
-        <span className="mt-4 inline-block rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground">
-          Explore Platform
-        </span>
+        <Link
+          href="https://miransas.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-block rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground"
+        >
+          See all products
+        </Link>
       </div>
 
       <p className="font-semibold text-foreground">
@@ -33,7 +38,9 @@ export function PromoCard() {
       </p>
 
       <Link
-        href="/"
+        href="https://miransas.com"
+        target="_blank"
+        rel="noopener noreferrer"
         className="mt-3 inline-block text-sm font-medium text-primary underline underline-offset-4"
       >
         Learn more

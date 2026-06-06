@@ -138,7 +138,7 @@ export default async function PostPage({
                 <div className="leading-tight">
                   <p className="font-semibold text-foreground">{post.author}</p>
                   <p className="text-sm text-muted-foreground">
-                     System Engineer
+                    Founder, Miransas
                   </p>
                 </div>
               </div>
