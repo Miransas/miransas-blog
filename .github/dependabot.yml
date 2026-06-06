@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Enable version updates for npm dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '03:00'
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: 'scope'
+    pull-request-branch-name:
+      separator: '/'
+    allow:
+      - dependency-type: 'production'
+      - dependency-type: 'development'
+    rebase-strategy: 'auto'
+    target-branch: 'develop'
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '04:00'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
