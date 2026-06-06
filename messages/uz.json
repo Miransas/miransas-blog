@@ -1,0 +1,16 @@
+{
+  "blog": {
+    "title": "Miransas",
+    "subtitle": "TODO: Uzbek subtitle",
+    "backToBlog": "TODO",
+    "allPosts": "TODO",
+    "onThisPage": "TODO",
+    "relatedPosts": "TODO"
+  },
+  "promo": {
+    "eyebrow": "TODO",
+    "heading": "TODO",
+    "body": "TODO",
+    "cta": "TODO"
+  }
+}

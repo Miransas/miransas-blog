@@ -1,3 +1,5 @@
+import type { Locale } from './i18n'
+
 export interface PostMeta {
   slug: string
   title: string
@@ -6,6 +8,8 @@ export interface PostMeta {
   category: string
   author: string
   image: string
+  lang: Locale
+  translations: Partial<Record<Locale, true>>
 }
 
 export interface Post extends PostMeta {

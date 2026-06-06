@@ -1,36 +1,111 @@
 ---
-title: "Why We Courierx"
-description: "The story behind Binboi and our mission to simplify email infrastructure."
+title: "Why I built CourierX"
+description: "A self-hosted, open-source email API for developers — and why $20/month was the wrong reason to keep paying Resend."
 date: "2026-06-06"
-category: "Company"
+category: "Engineering"
 author: "Sardor Azimov"
 image: "/assets/courierx.png"
+lang: en
+slug: why-courierx
 ---
-A great portfolio is the single most effective way to land clients and jobs. With Next.js, you get blazing-fast performance, great SEO, and a developer experience that makes building one a joy.
 
-## What makes a great portfolio?
+The first commit on CourierX wasn't planned. I was looking at my monthly bill for a side project — Resend charging me $20 for emails I was barely sending — and the thought wouldn't leave: *I am paying twenty dollars a month for an HTTP endpoint that calls SES.*
 
-A portfolio is more than a list of projects. It tells a story about who you are and what you can do.
+That's not a complaint about Resend. Resend is good. The DX is real, the dashboard is clean, and I genuinely think they earned what they charge. But the more I looked at what their API actually does — accept a POST request, queue it, hand it off to a provider — the more it felt like something I could build, in Rust, for a project I cared about under a brand I was already growing.
 
-- **Clear hero** — say who you are in one sentence
-- **Selected work** — quality over quantity
-- **Case studies** — show your process, not just the result
-- **A way to reach you** — make contact effortless
+So I built it. And the version that exists today, [CourierX](https://courierx.io), is that build: an open-source, self-hosted email API that you point your existing Resend SDK at, change one URL, and you're done.
 
-## Template categories
+## What it actually is
 
-### Minimal
+CourierX is two Rust binaries and a Postgres database:
 
-Clean typography, lots of whitespace, and a focus on the work itself. Ideal for designers and writers.
+1. **The API** (`courierx-api`) — an HTTP server that exposes `POST /v1/emails` with a request body identical to Resend's. You send JSON, it writes a row, it returns `202 Accepted`.
+2. **The worker** (`courierx-worker`) — a polling loop that pulls queued emails from Postgres and hands them off to whatever provider you configure (SES, Resend itself, SMTP, or, in development, stdout).
 
-### Interactive
+That's it. No Redis. No Kafka. No managed queue service. Just Postgres doing what Postgres has done since `FOR UPDATE SKIP LOCKED` shipped.
 
-Scroll animations, 3D scenes, and playful micro-interactions that demonstrate your front-end chops.
+## Why no Redis
 
-### Developer-focused
+This was the architectural decision I cared most about, and the one I almost talked myself out of.
 
-Code snippets, GitHub stats, and technical writing front and center.
+The conventional wisdom for job queues in 2026 is: you need a queue. Redis with BullMQ, RabbitMQ, AWS SQS, NATS — pick one. Postgres is too slow, the argument goes. Postgres isn't a queue.
 
-## Conclusion
+Except Postgres is, in fact, a queue, when you ask it nicely. `SELECT ... FOR UPDATE SKIP LOCKED` is the magic incantation: it lets multiple workers concurrently pull rows out of a table without stepping on each other. No double-delivery. No lock contention. It's how Sidekiq Pro, Oban (the Elixir gold standard), and the newer River library in Go all work under the hood.
 
-Pick a template that reflects your personality and the kind of work you want to attract. Then make it yours.
+The trade-off is throughput. Postgres tops out somewhere in the thousands of jobs per second per machine, while Redis can do tens of thousands. But the trade you get is enormous:
+
+- **One less service** to deploy, monitor, secure, back up, and pay for
+- **Transactional consistency** with your application data — your "email queued" row lives in the same database as your "user signed up" row, in the same transaction, atomic by default
+- **Schema you can query** — `SELECT * FROM emails WHERE status = 'failed'` is just a SQL query, no special tooling needed
+
+For an email API where almost no app sends more than a few hundred emails per second at peak, the throughput ceiling of Postgres is so far above the use case that the simplicity is worth it. CourierX trades scale you'll probably never need for operational sanity you'll need every day.
+
+I also wanted to build it in Rust, which is a separate story.
+
+## Why Rust
+
+Honest answer: because I like Rust. I like working at the systems level — the trait system, the borrow checker, the way `Result<T, E>` makes error handling explicit instead of optional. I've spent enough time in C and C++ to know what Rust replaces, and the Rust replacement is, every time, better than what came before.
+
+The technical justification is real too: a single Rust binary, statically linked, deployed onto a $5 VPS, will out-handle a comparably-sized Node.js or Python service by an order of magnitude in tail latency. The memory footprint is tiny. Cold start is instantaneous. And the API surface — `axum::Router::new().route()` — is honestly competitive with Express or FastAPI for ergonomics now.
+
+But the real reason is that I wanted to live in this code for the next several years. CourierX is part of the Miransas portfolio — alongside [Binboi](https://binboi.com) and a few other infrastructure projects — and the goal was never to ship the fastest possible MVP. It was to ship something I'd be proud of, in a stack I genuinely enjoy.
+
+## The architecture, briefly
+
+```
+┌──────────┐      POST /v1/emails       ┌──────────┐
+│ Your app │ ──────────────────────────▶│   API    │
+└──────────┘                            └────┬─────┘
+                                             │  INSERT INTO emails (status='queued')
+                                             ▼
+                                        ┌──────────┐
+                                        │ Postgres │
+                                        └────┬─────┘
+                                             │  FOR UPDATE SKIP LOCKED
+                                             ▼
+                                        ┌──────────┐
+                                        │  Worker  │ ──▶  Provider (SES / Resend / SMTP / stdout)
+                                        └──────────┘
+```
+
+The API doesn't deliver email — it just queues. The worker doesn't know how to receive HTTP — it just polls. They share a database and nothing else. You can run twenty API instances behind a load balancer, or ten workers across three machines, and `SKIP LOCKED` ensures nobody double-delivers.
+
+The provider is a trait:
+
+```rust
+#[async_trait]
+pub trait EmailProvider: Send + Sync {
+    async fn send(&self, email: &Email) -> Result<String, ProviderError>;
+}
+```
+
+There's a `StdoutProvider` for local dev (prints the email body to your terminal — fast, hermetic, no external dependencies). Production providers come next: a Resend adapter that lets CourierX use Resend as the underlying SMTP relay, an SES adapter, plain SMTP. The point of the trait is that swapping is trivial — change one line in `.env`, restart the worker, you're sending through a different backbone.
+
+## What's done, what's next
+
+The Phase 1 milestone is shipped. You can clone the API and worker repos right now, run `cargo run` in each, point a curl request at `localhost:8080/v1/emails`, and watch the email get queued, picked up, "delivered" via stdout, and marked `sent` in the database. End-to-end, locally, in a few minutes.
+
+What's next, roughly in order:
+
+1. Domain (`courierx.io`) goes live — it's bought, just waiting on DNS
+2. The marketing site ([already shipped](https://courierx.io))
+3. The dashboard, [courierx-console](https://github.com/Miransas/courierx-console), which is currently in mock-data mode but will wire up to the real API
+4. The Resend provider — the first integration that sends real outbound mail
+5. SES provider — for production hosting at scale
+6. Managed cloud — for people who want CourierX without running it themselves
+
+The dashboard is the part I'm most excited about. The mock-data demo is already prettier than I expected when I started — real charts, a recent-emails list, deliverability metrics — and getting it wired to live data feels like the inflection point where CourierX stops being a backend project and becomes a real product someone can use.
+
+## Try it
+
+If any of this sounds interesting, the code is here:
+
+- API: [github.com/Miransas/courierx-api](https://github.com/Miransas/courierx-api)
+- Worker: [github.com/Miransas/courierx-worker](https://github.com/Miransas/courierx-worker)
+- Marketing site: [github.com/sardorazimov/courierx-web](https://github.com/sardorazimov/courierx-web)
+
+It's MIT-licensed. The README covers everything you need to get it running locally. Issues, PRs, and questions all welcome — this is genuinely intended as a tool other developers can use, fork, and self-host without paying me a dollar.
+
+The managed cloud will exist eventually, for people who'd rather pay than run their own infrastructure. But the self-hosted path is the foundation, and it's not going anywhere.
+
+If you ship a real email through CourierX, [open an issue](https://github.com/Miransas/courierx-api/issues) and tell me what broke.

@@ -1,11 +1,17 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { defaultLocale } from '@/lib/i18n'
 import { formatDate, type PostMeta } from '@/lib/post-types'
 
 export function PostCard({ post }: { post: PostMeta }) {
+  const href =
+    post.lang === defaultLocale
+      ? `/blog/${post.slug}`
+      : `/${post.lang}/blog/${post.slug}`
+
   return (
     <Link
-      href={`/blog/${post.slug}`}
+      href={href}
       className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50"
     >
       <div className="relative aspect-[16/9] overflow-hidden bg-muted">

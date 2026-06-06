@@ -5,7 +5,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { defaultLocale, type Locale } from "@/lib/i18n";
 import { ThemeToggle } from "../provider/mode-toggle";
+import { LocaleSwitcher } from "./locale-switcher";
 
 const navLinks = [
   { label: "CourierX", href: "https://courierx.io" },
@@ -13,7 +15,11 @@ const navLinks = [
   { label: "Miransas-Chess", href: "https://miransas.com/projects/miransas-chess" },
 ];
 
-export function Header() {
+interface HeaderProps {
+  availableLocales?: Locale[];
+}
+
+export function Header({ availableLocales = [defaultLocale] }: HeaderProps = {}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -58,6 +64,7 @@ export function Header() {
 
         {/* CTA Butonları */}
         <div className="hidden md:flex items-center gap-4">
+          <LocaleSwitcher availableLocales={availableLocales} />
           <ThemeToggle />
           <Link
             href="https://miransas.com"

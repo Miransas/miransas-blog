@@ -1,0 +1,16 @@
+{
+  "blog": {
+    "title": "Miransas",
+    "subtitle": "Ekipten en son haberler, rehberler ve güncellemeler. Next.js 16 ve MDX ile geliştirildi.",
+    "backToBlog": "Bloga geri dön",
+    "allPosts": "Tümü",
+    "onThisPage": "Bu sayfada",
+    "relatedPosts": "İlgili yazılar"
+  },
+  "promo": {
+    "eyebrow": "TANIYIN: MIRANSAS",
+    "heading": "Geliştiriciler için altyapı araçları.",
+    "body": "Açık kaynaklı, kendi sunucunda çalışan geliştirici araçları üretiyoruz — email API'leri, tunneling, satranç motorları ve daha fazlası. Tek marka, birçok ürün.",
+    "cta": "Tüm ürünleri gör"
+  }
+}

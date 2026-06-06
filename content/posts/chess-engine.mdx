@@ -1,9 +1,116 @@
 ---
-title: "Why We Built Binboi"
-description: "The story behind Binboi and our mission to simplify email infrastructure."
+title: "A chess engine, from scratch, in Rust"
+description: "I couldn't beat Stockfish. I got tired of arguing with online rating systems. So I started building my own engine to understand what was really happening on the board."
 date: "2026-06-06"
-category: "Company"
+category: "Engineering"
 author: "Sardor Azimov"
 image: "/assets/chess-miransas.png"
+lang: en
+slug: chess-engine-rust
 ---
-Miransas Chess, Sardor Azimov tarafından Rust programlama dili kullanılarak geliştirilen kişisel ve modern bir satranç motorudur. Hızlı performans, sıfır bellek yükü ve temiz mimari üzerine odaklanan bu proje, milyonlarca pozisyonu hesaplayabilen yüksek performanslı bir çekirdeğe sahiptir.Projenin teknik detaylarını incelemek için geliştiricinin resmi web sitesi olan Miransas Studio adresini ziyaret edebilir veya kaynak kodlarına Sardor Azimov GitHub profili üzerinden göz atabilirsiniz.
+
+The honest origin story for [Miransas-Chess](https://miransas.com/projects/miransas-chess) is that I spent too long getting beaten by Stockfish, then got tired of being rating-shamed on chess.com and Lichess, and decided that if the game was going to make me feel stupid I'd at least understand why.
+
+I started in March 2026. No business plan. No SaaS ambition. Just a Rust project I picked up on weekends because I wanted to know, line by line, what was happening inside the box that was easily beating me.
+
+This is what's been built so far, and what's left.
+
+## Why a chess engine at all
+
+There are two kinds of chess players who write chess engines. The first kind are good at chess and want to make a stronger Stockfish. The second kind are bad at chess and want to understand what good chess looks like from the inside.
+
+I am the second kind.
+
+Playing against Stockfish is humbling in a way that's hard to describe. You make a move you think is reasonable. Stockfish responds instantly with something you didn't see. Three moves later you've lost a piece. Eight moves later you've lost the game. The engine is silent the whole time — it doesn't gloat, it doesn't explain — and you're left staring at the position trying to figure out at what point you became the loser.
+
+Online play makes this worse, not better. Rating systems on chess.com and Lichess are blunt instruments. You can play well, lose to someone who happens to know one tactical pattern you don't, and watch your rating drop. There's no nuance, no "you actually played most of this correctly." Just a number going down.
+
+After enough of that, I stopped wanting to play and started wanting to build. If I could write the thing that was beating me, I'd at least see what it was doing.
+
+## The decision: from scratch, in Rust, no dependencies
+
+The conventional way to start a chess engine in 2026 is to fork an existing one. There are hundreds. Or you can pull in `chess` (the Rust crate) and get move generation, board representation, and FEN parsing for free.
+
+I chose neither. The whole point of this project was to understand chess engines from the level of bits, not to ship a competitive one. So:
+
+- **Pure Rust**, no chess-specific dependencies
+- **Bitboards** for board representation — 64-bit integers where each bit is a square
+- **Hand-written move generation** — knight tables, sliding piece attacks, the works
+- **Hand-written alpha-beta search** — no minimax shortcuts, no "let me grab this from a textbook" copy-pastes
+- **Tested obsessively** — over 110 unit and integration tests, plus `perft` benchmarks at multiple depths
+
+"Pure Rust, zero chess dependencies" is the line that closes a lot of doors quickly. You can't `cargo add` your way out of a bug. Every component has to work, and you have to know why it works.
+
+## Bitboards, briefly
+
+If you've never written engine code before: a chessboard has 64 squares, which conveniently fits into a 64-bit integer. Each piece type gets one of these integers (a "bitboard"), with each bit set to 1 if that piece is on that square, 0 otherwise.
+
+```rust
+struct Position {
+    white_pawns:   u64,
+    white_knights: u64,
+    white_bishops: u64,
+    white_rooks:   u64,
+    white_queens:  u64,
+    white_king:    u64,
+    black_pawns:   u64,
+    // ... and so on
+}
+```
+
+The reason this matters: chess questions become bit operations. "Are any white pieces on the back rank?" is `(white_pawns | white_knights | ...) & BACK_RANK_MASK != 0`. "What squares are attacked by this rook?" is a lookup into a precomputed table indexed by occupancy.
+
+The speedup over a naive `Square[8][8]` representation is roughly 10x for move generation alone. The cost is that the code looks like nothing else you've ever written.
+
+## The bug that taught me perft
+
+`perft` (performance test, traditionally) is the canonical chess engine debugging tool. Given a starting position and a depth, it counts the exact number of legal positions reachable. The numbers for the standard starting position are public and verified across decades of engines. If your engine generates a different number, your engine has a bug.
+
+Perft at depth 5 from the starting position is `4,865,609`. Exactly. Down to the last position. If you generate `4,865,610`, you're allowing one illegal move somewhere. If you generate `4,865,608`, you're missing one legal move.
+
+The bug I spent two weeks on was at depth 5 — off by something like 47 positions out of 4.8 million. Less than one in a hundred thousand. I knew it was there, I couldn't find it, and the only way to localize it was to run perft at every intermediate depth, against every intermediate move, until the discrepancy showed itself.
+
+It turned out to be a bug in my en passant capture handling. A specific class of positions where the captured pawn could legally pin a piece across the move — and I was treating it as a normal pawn move, losing the pin information.
+
+The fix was small. The lesson was big: chess engines are deterministic systems. There is no "well, it usually works." It works for all 4,865,609 positions, or it doesn't.
+
+## Where the engine is now
+
+The project is in what I've been calling Phase 3 — full pseudo-legal move generation, legal move filtering with proper pin and check detection, and an alpha-beta search with some serious optimizations:
+
+- **Iterative deepening** — search depth 1 first, then 2, then 3, using the previous depth's best move as the new search's first move
+- **Alpha-beta with aspiration windows** — narrow the search window around the previous score for faster cutoffs
+- **Null move pruning** — assume the opponent passes, see if our position is still strong; if so, prune
+- **Late move reductions (LMR)** — search less promising moves at reduced depth
+
+The performance numbers, on my laptop:
+
+- **From 32 million nodes per move at depth 6, down to 207 thousand** after the optimizations
+- **99.36% search reduction** — the engine is searching only 0.64% of the positions it would have searched without pruning
+- **Roughly 8 plies of forward thinking** on a typical middlegame position in a few hundred milliseconds
+
+These numbers will not threaten Stockfish, which is doing tens of millions of nodes per second with a neural network on top. But the goal was never to beat Stockfish. It was to understand the difference between the engine that beats me and the engine I can build — and at this point, I can articulate the difference, which is most of what I wanted.
+
+## What I learned about chess
+
+Writing a chess engine taught me more about chess than two years of playing did. A few things that surprised me:
+
+- **Most positions are decided by tactics, not strategy.** The search tree is dominated by short-term captures, pins, and forks. Long-term positional play matters at the highest levels; at my level, I was losing to tactics I literally couldn't see, and seeing them clearly in the engine's output made me a better player.
+- **The "obvious move" isn't always best.** The engine routinely picks moves a human would dismiss as awkward, because three or four moves deep, they win material the obvious move loses. Watching the engine reason through these has changed how I look at positions.
+- **Stockfish isn't magic.** It's the same algorithms I implemented, plus thirty years of tuning, plus a neural network evaluation. The fundamentals are accessible to anyone willing to write `cargo build`.
+
+## What's next
+
+The current focus is the search heuristic refinements — better move ordering, killer moves, history tables. These are the kinds of micro-optimizations that take an engine from "decent" to "actually scary." After that:
+
+- A simple **UCI interface** so the engine can be plugged into chess GUIs and play against other engines
+- An **online play page** at miransas.com where you can play the engine in a browser
+- Eventually, **time management** — engines have to budget their search time across the whole game
+
+I'm not going to compete with Stockfish. I'm not going to publish a competitive Elo rating. Miransas-Chess is, and will remain, a thing I built because I wanted to understand chess from the algorithm side.
+
+If you're in the same boat — frustrated with the rating systems, curious what's happening inside the engines that crush you — clone the repo and read the code. The whole engine is roughly 8,000 lines of Rust, and almost every line of it teaches something:
+
+- [github.com/sardorazimov/miransas-chess](https://github.com/sardorazimov/miransas-chess)
+
+You don't have to be good at chess to write a chess engine. You only have to want to know what's going on.

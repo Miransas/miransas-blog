@@ -1,0 +1,16 @@
+{
+  "blog": {
+    "title": "Miransas",
+    "subtitle": "Latest news, guides, and updates from the team. Built with Next.js 16 and MDX.",
+    "backToBlog": "Back to blog",
+    "allPosts": "All",
+    "onThisPage": "On this page",
+    "relatedPosts": "Related posts"
+  },
+  "promo": {
+    "eyebrow": "INTRODUCING MIRANSAS",
+    "heading": "Infrastructure tools for builders.",
+    "body": "We build self-hosted, open-source developer tools — email APIs, tunneling, chess engines, and more. One brand, many products.",
+    "cta": "See all products"
+  }
+}

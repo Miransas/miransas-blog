@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { defaultLocale } from '@/lib/i18n'
 import { formatDate, type PostMeta } from '@/lib/post-types'
 
 export function RelatedPosts({ posts }: { posts: PostMeta[] }) {
@@ -25,7 +26,11 @@ export function RelatedPosts({ posts }: { posts: PostMeta[] }) {
         {posts.map((post) => (
           <Link
             key={post.slug}
-            href={`/blog/${post.slug}`}
+            href={
+              post.lang === defaultLocale
+                ? `/blog/${post.slug}`
+                : `/${post.lang}/blog/${post.slug}`
+            }
             className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50"
           >
             <div className="relative aspect-[16/9] overflow-hidden bg-muted">

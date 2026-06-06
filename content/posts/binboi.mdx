@@ -1,27 +1,110 @@
 ---
-title: "Why We Built Binboi"
-description: "The story behind Binboi and our mission to simplify email infrastructure."
+title: "Building Binboi, a self-hosted ngrok alternative"
+description: "A hobby project from December 2025 that turned into a real product — and the bugs, billing fights, and migrations that happened along the way."
 date: "2026-06-06"
-category: "Company"
+category: "Engineering"
 author: "Sardor Azimov"
 image: "/assets/binboi.png"
+lang: en
+slug: building-binboi
 ---
 
-## The Problem
+I started Binboi in December 2025 as a weekend project. Not as a product, not as a SaaS, not as part of any plan — just because I wanted a self-hosted version of ngrok and I didn't want to pay for ngrok forever.
 
-Most email platforms are expensive, complicated, and filled with features that small developers never use.
+The plan was modest: expose `localhost:3000` to a public URL, get TLS, run it on a server I own. The kind of project you assume will take a weekend and actually takes six months.
 
-## Why Binboi Exists
+This is the story of what it became.
 
-We wanted a simple platform that lets developers send transactional emails without spending hours configuring infrastructure.
+## What Binboi does
 
-## Our Principles
+[Binboi](https://binboi.com) is a self-hosted tunnel service. You run the server somewhere with a public IP — your VPS, a small box, anywhere — and then you run a CLI on your laptop. The CLI opens a persistent connection to the server. When a public HTTP request hits `your-name.binboi.com`, the server forwards it through the persistent connection to your local machine, your local server replies, and the response goes back out the same way.
 
-- Simple APIs
-- Transparent pricing
-- Fast delivery
-- Developer-first experience
+It's the same idea as ngrok, just running on infrastructure I own, paying for resources I'm using directly, and shaped exactly the way I want it.
 
-## What's Next
+The reason a project like this exists at all is that webhooks are hard to test from a laptop. So is showing a work-in-progress to someone over a video call, demoing a mobile build to a designer who isn't on your wifi, or any of the dozen other times in a week when you need the outside internet to reach `localhost`.
 
-We're building analytics, templates, webhooks, and more tools to help teams communicate with users reliably.
+## Why Go (and not Rust)
+
+If you've read the [CourierX post](/blog/why-courierx), you know I'm a Rust person. CourierX is Rust top to bottom, and I love it.
+
+Binboi is Go.
+
+The honest answer for why is that when I started in December, Go felt like the better fit for what I was doing, and I went with that instinct without overthinking it. There wasn't a deeper analysis. I considered Rust, I considered Go, I picked Go, and I haven't regretted it. The networking story in Go is mature, the deployment story (single static binary) matches what Rust gives you, and the iteration speed when prototyping a tunnel protocol is honestly faster in Go than wrestling with `tokio` lifetimes for the same code.
+
+This is part of working on multiple projects under [Miransas](https://miransas.com): the brand stays consistent, but the stack inside each project gets picked based on what fits, not based on what I picked last time.
+
+## The yamux stream leak
+
+The single most painful bug in Binboi's six months was a stream leak in the multiplexing layer.
+
+Quick context: when a tunnel client connects to the Binboi server, they share *one* TCP connection. But that connection has to carry *many* concurrent HTTP requests — every time a user hits `your-name.binboi.com`, that request becomes a new logical stream multiplexed over the same physical connection. The library doing this multiplexing is [yamux](https://github.com/hashicorp/yamux), originally written by HashiCorp.
+
+Yamux works beautifully. Until it doesn't.
+
+The symptom: every tunnel started returning 404 after exactly 256 requests. Not 250, not 300. Exactly 256. The tunnel itself didn't crash, didn't disconnect, didn't log any errors. It just stopped serving requests, silently.
+
+Two-five-six is a number every systems programmer recognizes the moment they see it. It's `2^8`. Something is overflowing or wrapping or maxing out at a byte boundary. The hunt began.
+
+It turned out I was opening streams correctly but never closing them on the response path. Each HTTP request opened a yamux stream, the response wrote back through it, and then the stream's resources sat there indefinitely — `Close()` was never called. Yamux happily kept track of every open stream until it hit its internal limit (256, configurable but I was on defaults), then quietly refused to open new ones.
+
+The fix was three lines. The hunt was three days.
+
+```go
+// before — leaks streams
+stream, err := session.Open()
+if err != nil { return err }
+io.Copy(stream, request)
+// response handled, stream forgotten, never closed
+
+// after — closes streams
+stream, err := session.Open()
+if err != nil { return err }
+defer stream.Close()  // this line. these eight characters.
+io.Copy(stream, request)
+```
+
+The lesson, which I already knew but had to learn again: `defer Close()` immediately after any resource opens, every single time, no exceptions. The cost of a missed `Close()` in a single-connection program is a memory blip. In a multiplexed long-lived connection, it's a slow-motion DoS against yourself.
+
+## The Google Cloud incident
+
+Around month four, Binboi was running on Google Cloud Platform. Frankfurt region, small VM, Docker Compose for the services, Cloudflare in front. Everything was healthy. The project was in shape to start sharing publicly.
+
+Then my account got suspended over a billing issue I won't relitigate here.
+
+I'm not going to dump on GCP. Their support eventually responded. The issue was, in retrospect, recoverable. But by the time the dust had settled, I'd already moved to DigitalOcean — and once you've moved, you don't move back.
+
+The migration itself was instructive. Total downtime was a few hours, mostly spent waiting on DNS propagation. The actual work — provisioning a fresh DO droplet, installing Docker, running `docker compose up`, pointing Cloudflare at the new IP — took maybe an hour. This is the part of self-hosted infrastructure people undersell: when something goes wrong with your provider, your bill, your account, or your region, you can leave. Your data is in your repo. Your services are described as code. The new host is a `docker compose up` away.
+
+Binboi today runs on a $32/month DigitalOcean Premium Intel droplet in Frankfurt, 2 vCPU and 4GB RAM. It's been stable for months. There's a UFW firewall, fail2ban on SSH, key-only auth, and Caddy in front doing wildcard TLS via Cloudflare's DNS-01 challenge. The cost is fixed, the access is mine, and the architecture is something I could rebuild from scratch in an afternoon if I had to.
+
+## What "hobby that became real" looks like
+
+Six months from the first commit, Binboi is:
+
+- A working tunnel service running 24/7
+- A marketing site at [binboi.com](https://binboi.com)
+- A mobile-responsive dashboard with email signup
+- A documented architecture I can hand off to anyone who wants to fork it
+- Possibly the first Miransas product I'd be comfortable charging for
+
+That last point is the inflection. Binboi was a hobby for the first three months. Then it crossed some line where it stopped being something I was tinkering with and started being something I'd defend in a meeting. The exact moment is hard to identify. It happened around the time the dashboard started looking like a real product and the daily traffic started looking like something I'd need to keep up.
+
+If you're working on something on weekends right now and wondering whether it'll become real — I don't know. But the answer for me with Binboi, with CourierX, with [Miransas-Chess](/blog/chess-engine-rust), has been: at some point the project stops being a project and becomes a thing you have. The transition is gradual. And you only notice it after it's happened.
+
+## What's next
+
+The current focus is getting Binboi to a state where I'd send a stranger to the signup form. A few things remain:
+
+- Real authentication beyond the current basic flow
+- A proper "your tunnels" dashboard with usage metrics
+- A CLI that's polished enough to publish to Homebrew and a few package managers
+- Pricing — eventually, because the bandwidth bills are real
+
+Self-hosting will stay free, always. The managed tier, when it ships, will be for people who want a tunnel without running a server. That's the same shape as [CourierX](/blog/why-courierx): open source for the people who want to own their infrastructure, managed for the people who'd rather pay.
+
+The code is here:
+
+- [github.com/sardorazimov/binboi-core](https://github.com/miransas/binboi-go)
+- [github.com/sardorazimov/binboi-web](https://github.com/miransas/binboi-docs)
+
+If you spin up your own instance, [send an issue](https://github.com/miransas/binboi-docs/issues) and tell me what's broken. There's always something.
