@@ -9,10 +9,11 @@ import rehypeSlug from 'rehype-slug'
 import { mdxComponents } from '@/components/shared/mdx-components'
 import { PromoCard } from '@/components/shared/promo-card'
 import { RelatedPosts } from '@/components/shared/related-posts'
-import { SiteHeader } from '@/components/shared/header'
+
 import { TableOfContents } from '@/components/shared/table-of-contents'
 import { formatDate, getAllPosts, getPostBySlug } from '@/lib/posts'
 import { extractToc } from '@/lib/toc'
+import { Header } from '../../../components/shared/header'
 
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }))
@@ -27,7 +28,7 @@ export async function generateMetadata({
   const post = getPostBySlug(slug)
   if (!post) return {}
   return {
-    title: `${post.title} — Magic Blog`,
+    title: `${post.title} — Miransas Blog`,
     description: post.description,
   }
 }
@@ -50,8 +51,8 @@ export default async function PostPage({
     .slice(0, 4)
 
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
+    <div className="min-h-screen bg-background pt-12">
+      <Header/>
       <div className="mx-auto max-w-6xl px-4 py-12">
         <Link
           href="/"
@@ -127,7 +128,7 @@ export default async function PostPage({
               <div className="flex items-center gap-3">
                 <div className="relative size-10 shrink-0 overflow-hidden rounded-full bg-muted">
                   <Image
-                    src="/author-avatar.png"
+                    src="/authors/sardor.png"
                     alt={post.author}
                     fill
                     sizes="40px"
@@ -137,7 +138,7 @@ export default async function PostPage({
                 <div className="leading-tight">
                   <p className="font-semibold text-foreground">{post.author}</p>
                   <p className="text-sm text-muted-foreground">
-                    Design System Engineer
+                     System Engineer
                   </p>
                 </div>
               </div>
@@ -156,7 +157,7 @@ export default async function PostPage({
 
       <footer className="mt-12 border-t border-border">
         <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground">
-          {`© ${new Date().getFullYear()} Magic Blog.`}
+          {`© ${new Date().getFullYear()} Miransas. All rights reserved. `}
         </div>
       </footer>
     </div>

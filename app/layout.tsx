@@ -1,17 +1,26 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/provider/theme-provider'
 import './globals.css'
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
+const ibmPlexSans = IBM_Plex_Sans({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+// Kod/Sistem fontu: Loglar ve API anahtarları için en okunaklı monospaced font
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
+
+
 
 export const metadata: Metadata = {
-  title: 'Magic Blog — Latest news and updates',
+  title: 'Miransas — Latest news and updates',
   description:
     'Latest news, guides, and updates. A modern blog built with Next.js 16 and MDX.',
   generator: 'v0.app',
@@ -42,13 +51,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${ibmPlexSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

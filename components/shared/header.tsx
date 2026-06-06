@@ -22,7 +22,7 @@ export function Header() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 h-16 w-full transition-all duration-300 ease-in-out font-sans border-b",
         isScrolled
-          ? "bg-brand-bg/80 backdrop-blur-md border-white/10"
+          ? "dark:bg-brand-bg/80 backdrop-blur-md border-white/10 dark:border-white/20 bg-white/80"
           : "bg-transparent border-transparent"
       )}
     >
@@ -31,7 +31,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-2 text-white font-bold text-lg tracking-tight group">
            <img src="/logo.png" alt="Miransas Logo" className="h-6 w-6 group-hover:animate-pulse" />
-          <span>Miransas</span>
+          <span className="text-lg font-bold dark:text-white text-black">Miransas</span>
         </Link>
 
         {/* Desktop Nav */}

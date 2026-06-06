@@ -12,7 +12,7 @@ export default function HomePage() {
       <main className="mx-auto max-w-5xl px-4 py-16">
         <header className="mb-12 flex flex-col gap-3">
           <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-            Magic Blog
+            Miransas 
           </h1>
           <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground text-pretty">
             Latest news, guides, and updates from the team. Built with Next.js
@@ -25,7 +25,7 @@ export default function HomePage() {
 
       <footer className="border-t border-border">
         <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-muted-foreground">
-          {`© ${new Date().getFullYear()} Magic Blog. Built with Next.js 16 + MDX.`}
+          {`© ${new Date().getFullYear()} Miransas. All rights reserved. `}
         </div>
       </footer>
     </div>
