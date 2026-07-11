@@ -42,7 +42,7 @@ export function Header({ availableLocales = [defaultLocale] }: HeaderProps = {})
         
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-2 text-white font-bold text-lg tracking-tight group">
-           <img src="/logo.png" alt="Miransas Logo" className="h-6 w-6 group-hover:animate-pulse" />
+           <img src="/logo.png" alt="Miransas Logo" className="h-16 w-16 group-hover:animate-pulse" />
           <span className="text-lg font-bold dark:text-white text-black">Miransas</span>
         </Link>
 

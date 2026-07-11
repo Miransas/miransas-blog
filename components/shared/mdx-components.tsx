@@ -1,13 +1,32 @@
 import React from 'react'
+import Image from 'next/image'
 import GithubSlugger from 'github-slugger'
 import { MDXComponents } from 'mdx/types'
 import { CodeBlock } from './code-block'
-
 
 function slugify(node: React.ReactNode): string {
   const slugger = new GithubSlugger()
   const text = typeof node === 'string' ? node : String(node ?? '')
   return slugger.slug(text)
+}
+
+function ResponsiveImage({ src, alt, ...props }: React.ComponentProps<typeof Image>) {
+  if (typeof src !== 'string') {
+    return null
+  }
+
+  return (
+    <div className="my-8 overflow-hidden rounded-xl border border-border bg-muted">
+      <Image
+        src={src}
+        alt={alt ?? ''}
+        width={1200}
+        height={675}
+        className="h-auto w-full object-cover"
+        {...props}
+      />
+    </div>
+  )
 }
 
 export const mdxComponents: MDXComponents = {
@@ -48,6 +67,7 @@ export const mdxComponents: MDXComponents = {
       {...props}
     />
   ),
+  img: (props) => <ResponsiveImage {...props} />,
   blockquote: (props) => (
     <blockquote
       className="my-6 border-l-2 border-primary pl-4 italic text-foreground"

@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { CategoryBadge } from '@/components/shared/category-badge'
 import { defaultLocale } from '@/lib/i18n'
 import { formatDate, type PostMeta } from '@/lib/post-types'
 
@@ -25,9 +26,7 @@ export function PostCard({ post }: { post: PostMeta }) {
       </div>
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-            {post.category}
-          </span>
+          <CategoryBadge label={post.category} />
         </div>
         <h2 className="text-lg font-semibold leading-snug tracking-tight text-balance group-hover:text-primary">
           {post.title}

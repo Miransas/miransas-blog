@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { CategoryBadge } from '@/components/shared/category-badge'
 import { defaultLocale } from '@/lib/i18n'
 import { formatDate, type PostMeta } from '@/lib/post-types'
 
@@ -43,9 +44,7 @@ export function RelatedPosts({ posts }: { posts: PostMeta[] }) {
               />
             </div>
             <div className="flex flex-1 flex-col gap-2 p-4">
-              <span className="w-fit rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                {post.category}
-              </span>
+              <CategoryBadge label={post.category} />
               <h3 className="font-semibold leading-snug text-foreground text-balance group-hover:text-primary">
                 {post.title}
               </h3>

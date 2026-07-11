@@ -1,0 +1,48 @@
+---
+title: "Building Miransas Pulse from Scratch"
+description: "A native macOS menubar monitor built without bloatware, with Objective-C, C, and launchd working together under the hood."
+date: "2026-07-12"
+category: "Engineering"
+author: "Sardor Azimov"
+image: "/assets/miransas-pluse.png"
+lang: en
+slug: miransas-pluse
+---
+
+I wanted a system monitor that felt native, lightweight, and useful without becoming another bloated desktop app. That was the starting point for Miransas Pulse.
+
+It is not just a dashboard. It is a small macOS-native tool that lives in the menubar, watches the machine, and gives you a quick read on CPU, memory, disk, and process activity without getting in the way.
+
+
+
+## Why build it this way
+
+The goal was simple: avoid the usual app-layer bloat and build something directly on top of the platform. Instead of reaching for a heavy framework or a cross-platform shell, every major piece was implemented from scratch using the native macOS stack.
+
+That meant working close to AppKit for the interface and using POSIX APIs for the performance-sensitive system metrics. The result is a tool that feels closer to the operating system than to a web wrapper pretending to be one.
+
+## The architecture
+
+The project uses a hybrid structure. Roughly 80% of the implementation is in Objective-C, which handles the menubar integration, event loop, lifecycle, and native UI behavior. The remaining 20% is written in C for the low-level metric collection and process snapshot logic.
+
+That split keeps the app responsive while making the performance-critical pieces explicit and predictable.
+
+## A background service, not just a window
+
+One of the more interesting parts of the project is that Miransas Pulse does not behave like a normal desktop window. It runs as a native background service through macOS launchd, which gives it a few important properties:
+
+- automatic startup at boot
+- crash recovery without manual intervention
+- a persistent presence that does not depend on a visible app window
+
+That makes the experience feel more like a system utility than a one-off prototype.
+
+## What I learned
+
+Building this by hand was a useful reminder that the simplest tools are often the hardest to make well. You end up learning a lot about the platform itself: event flow, lifecycle behavior, process monitoring, and the tradeoffs between abstraction and control.
+
+It also made me think more seriously about the next step: bringing the same approach to Windows with native Win32 and C++ APIs.
+
+## What is next
+
+The current direction is to keep the project focused on reliability and clarity. The long-term idea is to preserve the same philosophy while expanding the platform support and refining the experience around the metrics that matter most.
